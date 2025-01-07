@@ -2,29 +2,25 @@ include("tnlib.jl")
 include("model.jl")
 using Plots, LsqFit, Printf
 
-# change name
-chn(tags::Vector{Symbol}, (A, B)::Pair{Symbol,Symbol})::Vector{Symbol} =
-  tags .|> t -> Symbol(replace(String(t), String(A) => String(B)))
-
 # change tensor name
-chtn(T::Tensor, AB::Pair{Symbol,Symbol})::Tensor = retag(T, T.ord_tag, chn(T.ord_tag, AB))
-chtn!(T::Tensor, AB::Pair{Symbol,Symbol})::Tensor = retag!(T, T.ord_tag, chn(T.ord_tag, AB))
+chtn(T::Tensor, AB::Pair{Symbol,Symbol})::Tensor = retag(T, T.ord_tag, replace.(T.ord_tag, AB))
+chtn!(T::Tensor, AB::Pair{Symbol,Symbol})::Tensor = retag!(T, T.ord_tag, replace.(T.ord_tag, AB))
 
 # A and B are connected via iAB and iBA
 function isometry(A::Tensor, iAB::Vector{Symbol}, oA::Vector{Symbol},
   B::Tensor, iBA::Vector{Symbol}, oB::Vector{Symbol}; maxdim)
 
   iA = setdiff(A.ord_tag, [iAB; oA])
-  AA = contract(A, iA, conj!(chtn(A, :A => :Adag)), chn(iA, :A => :Adag))
+  AA = contract(A, iA, conj!(chtn(A, :A => :Adag)), replace.(iA, :A => :Adag))
   iB = setdiff(B.ord_tag, [iBA; oB])
-  BB = contract(B, iB, conj!(chtn(B, :B => :Bdag)), chn(iB, :B => :Bdag))
-  AABB = contract(AA, [iAB; chn(iAB, :A => :Adag)], BB, [iBA; chn(iBA, :B => :Bdag)])
+  BB = contract(B, iB, conj!(chtn(B, :B => :Bdag)), replace.(iB, :B => :Bdag))
+  AABB = contract(AA, [iAB; replace.(iAB, :A => :Adag)], BB, [iBA; replace.(iBA, :B => :Bdag)])
   U, _, _ = svd(AABB, [oA; oB], :Ucoarse, :iV; maxdim)
   chtn!(U, :A => :UA)
   chtn!(U, :B => :UB)
 end
 
-
+# calculate partition function on torus, Klein bottle and RP2
 function hotrg(T::Tensor; topscale=6, maxdim=16)
   @assert Set(T.ord_tag) == Set([:u, :l, :d, :r])
   retag!(T, T.ord_tag, Symbol.(:T, T.ord_tag))
@@ -32,7 +28,7 @@ function hotrg(T::Tensor; topscale=6, maxdim=16)
   d0 = size(T.array, 1)
   O = delta([d0, d0], [:Oi, :Oj]) # initial spatial-reflection-operator is identity
 
-  # norm, eigval, crosscap, rainbow
+  # norm, eigval, crosscap, rainbow, reflection operator
   ns, λs, Cis, Ris, Os = [], [], [], [], []
 
   for scale in 1:topscale # renormalize 4 -> 1 per loop
@@ -111,9 +107,9 @@ end
 
 function vertexcentered_unitcell(; hweight, vweight=hweight, locweight=ones(size(hweight, 1)))
   H = mktensor(hweight, [:H1i, :H2j])
-  H1, H2 = halve(H, [:H1i], :H1j, :H2i)
+  H1, H2 = bisect(H, [:H1i], :H1j, :H2i)
   V = mktensor(vweight, [:V1i, :V2j])
-  V1, V2 = halve(V, [:V1i], :V1j, :V2i)
+  V1, V2 = bisect(V, [:V1i], :V1j, :V2i)
   W = mktensor(locweight, [:W])
 
   vertex = delta(fill(size(hweight, 1), 5), [:V2j, :H2j, :V1i, :H1i, :W])
@@ -174,7 +170,6 @@ function critical(p::M=Potts(2); topscale=6, maxdim=16) where {M<:Model}
   )
   plot!(rp2plot, 1:topscale, exp.(f.(1:topscale, fit.param[1])); line=:dot)
 
-
   println("\n> eigvals of O")
   for scale in 1:topscale
     println("[scale: $scale] +1: ", count(>(0), diag(Os[scale])), ", -1: ", count(<(0), diag(Os[scale])))
@@ -182,3 +177,6 @@ function critical(p::M=Potts(2); topscale=6, maxdim=16) where {M<:Model}
 
   cplot, kbplot, rp2plot, Os
 end
+
+
+return

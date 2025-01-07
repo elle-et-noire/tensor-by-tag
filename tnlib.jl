@@ -1,6 +1,9 @@
-import Base: getindex, setindex!, conj!
+import Base: replace, getindex, setindex!, conj!
 import LinearAlgebra: svd, eigen
 using LinearAlgebra
+
+replace(A::Symbol, (old, new)::Pair{Symbol,Symbol}) =
+  Symbol(replace(String(A), String(old) => String(new)))
 
 mutable struct Tensor
   array::AbstractArray
@@ -175,7 +178,7 @@ function svd(A::Tensor, iA::Vector{Symbol},
 end
 
 """[`iA`---`A`---`jA`] == [`iA`---`U`---(`iU`==`iV`)---`V`---`jA`]"""
-function halve(A::Tensor, iA::Vector{Symbol},
+function bisect(A::Tensor, iA::Vector{Symbol},
   iU::Symbol, iV::Symbol; maxdim=nothing)::Tuple{Tensor,Tensor}
 
   U, S, V = svd(A, iA, iV, iU; maxdim)
@@ -199,7 +202,6 @@ function eigen(A::Tensor, iA::Vector{Symbol}, iU::Symbol; maxdim)
   _A = bundleinds(A, [iA, jA], [:__iA__, :__jA__], old_dims)
 
   vals, vecs = LinearAlgebra.eigen(_A.array)
-  # sort!(vals; by=abs, rev=true)
   reverse!(vals)
 
   # truncate

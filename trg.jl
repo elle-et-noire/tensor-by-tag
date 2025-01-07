@@ -31,8 +31,8 @@ function trg(; T=2 / log(1 + √2), maxdim=20, topscale=6)
     @time begin
       print("[scale: $(scale-1) -> $scale]")
 
-      F[2], F[4] = halve(A, [:down, :right], :l, :r; maxdim)
-      F[1], F[3] = halve(A, [:left, :down], :u, :d; maxdim)
+      F[2], F[4] = bisect(A, [:down, :right], :l, :r; maxdim)
+      F[1], F[3] = bisect(A, [:left, :down], :u, :d; maxdim)
       retag_by_pos_in_plaq!.(F)
       A = reduce(contract, F)
       retag!(A, [:u, :l, :r, :d], [:up, :left, :right, :down])
@@ -94,4 +94,5 @@ function trg(; T=2 / log(1 + √2), maxdim=20, topscale=6)
   fplot, cplot, xσplot, xεplot
 end
 
-# @time trg()
+
+return

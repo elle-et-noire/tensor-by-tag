@@ -1,5 +1,6 @@
 using LinearAlgebra
 
+
 abstract type Model end
 
 βc(m::T) where {T<:Model} = 1 / Tc(m)
@@ -40,3 +41,6 @@ function total_quantum_dim(p::Potts)
   )
   get(dict, p.q, missing)
 end
+
+
+return
