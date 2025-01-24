@@ -75,7 +75,7 @@ function trg(; T=2 / log(1 + √2), maxdim=20, topscale=6)
 
   #------- plot CFT data -------#
 
-  fplot = scatter(1:topscale, log.(zs); legend=false, msw=0,
+  fplot = scatter(1:topscale, -T * log.(zs); legend=false, msw=0,
     xlabel="2log2 L", ylabel="free energy")
 
   cplot = scatter(2:topscale,
